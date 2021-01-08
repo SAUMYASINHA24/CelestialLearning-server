@@ -1,6 +1,5 @@
 const { Subscriber } = require("../models/subscriberModel")
 const { SubscriberProfile } = require("../models/subscriberModel")
-
 const asyncHandler = require('express-async-handler')
 const { validationResult } = require("express-validator")
 const sgMail = require('@sendgrid/mail')
@@ -19,7 +18,7 @@ exports.register = asyncHandler(async (req, res) => {
     if (!errors.isEmpty()) {
         res.status(401);
         return res.json({
-            "msg": errors.array()[0].msg,
+            message: errors.array()[0].msg,
         })
     }
     const { username, email, password, confirm_password } = req.body;
@@ -30,21 +29,21 @@ exports.register = asyncHandler(async (req, res) => {
     if (password != confirm_password) {
         res.status(401);
         return res.json({
-            "msg": "Password did not match",
+            message: "Password did not match",
         })
     }
 
     if (usernameExists) {
         res.status(401);
         return res.json({
-            "msg": "Username is already taken.",
+            message: "Username is already taken.",
         })
     }
 
     if (emailExists) {
         res.status(401);
         return res.json({
-            "msg": "This email is already used.",
+            message: "This email is already used.",
         })
 
     }
@@ -54,18 +53,9 @@ exports.register = asyncHandler(async (req, res) => {
     if (strength.length > 72) {
         res.status(401);
         return res.json({
-            "msg": "Password is too Long",
+            message: "Password is too Long",
         })
     }
-
-    if (strength.value != "Strong") {
-        res.status(401);
-        return res.json({
-            "msg": "Weak Password",
-        })
-    }
-
-
 
     const user = new Subscriber({
         username: username,
@@ -107,41 +97,53 @@ exports.register = asyncHandler(async (req, res) => {
                 console.log("User data saved.");
             }
             catch (err) {
-                console.log(err);
+                res.json({
+                    message: "Error",
+                })
+
             }
             return res.json({
                 message: `Email has been sent to ${email} ${token}`
             });
         })
+<<<<<<< HEAD
+       .catch(error => {
+         res.status(400)
+         throw new Error(error)
+       });
+=======
         .catch(error => {
             res.status(400)
-            throw new Error(error)
+            return res.json({
+                message: "Error while sending activation link",
+            })
         });
-
-    /*return res.json({
-        "token" : token
-    })*/
+>>>>>>> 50f27701829a7647252b370e0ff3d54ae5a07d3b
 })
 
 exports.verify = asyncHandler(async (req, res) => {
-    const error = validationResult(req);
 
+    const error = validationResult(req)
     if (!error.isEmpty()) {
         res.status(401)
+
         return res.json({
-            "msg": "Token is missing",
+            message: "Token is missing",
         })
     }
 
     const token = req.headers.authorization.split(' ')[1];
+
     jwt.verify(token, process.env.JWT_SECRET, async (err) => {
         if (err) {
             res.status(401)
             return res.json({
-                "msg": "Token expires or invalid",
+                message: "Token expires or invalid",
             })
         }
         else {
+
+
             const { email } = jwt.decode(token);
             const subscriber = await Subscriber.findOne({ email });
             if (subscriber) {
@@ -156,18 +158,18 @@ exports.verify = asyncHandler(async (req, res) => {
                         },
                         async (err, doc) => {
                             if (err) {
-                                console.log(err)
-                                res.json({
-                                    msg: "Unregistered token."
+
+                                return res.json({
+                                    message: "Unregistered token."
                                 })
                             }
                             else {
                                 if (doc) {
 
-                                    res.json({ msg: "Subscriber Activated." })
+                                    return res.json({ message: "Subscriber Activated." })
                                 }
                                 else {
-                                    res.json({ msg: "Unregistered Token." })
+                                    return res.json({ message: "Unregistered Token." })
                                 }
                             }
                         }
@@ -175,26 +177,25 @@ exports.verify = asyncHandler(async (req, res) => {
                 }
                 else {
                     return res.json({
-                        "msg": "You have already activated your account.",
+                        message: "You have already activated your account.",
                     })
                 }
             }
             else {
                 return res.json({
-                    "msg": "This email does not exist",
+                    message: "This email does not exist",
                 })
             }
         }
-
     })
-})
+});
 
 exports.login = asyncHandler(async (req, res) => {
     const error = validationResult(req);
     if (!error.isEmpty()) {
         res.status(401)
         return res.json({
-            "msg": "Invalid username",
+            message: "Invalid username",
         })
 
     }
@@ -206,7 +207,7 @@ exports.login = asyncHandler(async (req, res) => {
     if (!user) {
         res.status(404);
         return res.json({
-            "msg": "You are not registered.",
+            message: "You are not registered.",
         })
 
     }
@@ -223,22 +224,23 @@ exports.login = asyncHandler(async (req, res) => {
             )
             req.session.email = email;
             req.session.token = token;
+
             return res.json({
-                "msg": " You are logged in successfully.",
-                "_id": await user.id,
+                message: " You are logged in successfully.",
+                _id: await user.id,
 
             })
         }
         else {
-            res.json({
-                "msg": "Please activate your account.",
+            return res.json({
+                message: "Please activate your account.",
             })
         }
 
     }
     else {
-        res.json({
-            "msg": "Incorrect username or password.",
+        return res.json({
+            message: "Incorrect username or password.",
         })
     }
 });
@@ -248,7 +250,7 @@ exports.forgetpassword = asyncHandler(async (req, res) => {
     if (!error.isEmpty()) {
         res.status(401)
         return res.json({
-            "msg": "Valid Email id is required.",
+            message: "Valid Email id is required.",
         })
 
     }
@@ -259,11 +261,12 @@ exports.forgetpassword = asyncHandler(async (req, res) => {
     if (!user) {
         res.status(404);
         return res.json({
-            "msg": "Incorrect email id. Please enter registered email id.",
+            message: "Incorrect email id. Please enter registered email id.",
         })
 
     }
     else {
+        req.session.forgetpasswordemail = email;
         const token = jwt.sign(
             {
                 email
@@ -273,7 +276,7 @@ exports.forgetpassword = asyncHandler(async (req, res) => {
                 expiresIn: '1h'
             }
         )
-        /*const emailData = {
+        const emailData = {
             from: process.env.EMAIL_FROM,
             to: email,
             subject: 'Password reset Link',
@@ -285,6 +288,7 @@ exports.forgetpassword = asyncHandler(async (req, res) => {
                     <p>This Email Contains Sensitive Information</p>
                     <p>${process.env.CLIENT_URL}</p>
                   `
+<<<<<<< HEAD
           };
     
           sgMail
@@ -297,10 +301,27 @@ exports.forgetpassword = asyncHandler(async (req, res) => {
            .catch(error => {
              res.status(400)
              throw new Error(error)
-           });*/
-        return res.json({
-            "token": token
+           });
+           return res.json({
+            "token" : token
         })
+=======
+        };
+
+        sgMail
+            .send(emailData)
+            .then(sent => {
+                return res.json({
+                    message: token
+                });
+            })
+            .catch(error => {
+                res.status(400)
+                return res.json({
+                    message: "Error while sending the email",
+                })
+            });
+>>>>>>> 50f27701829a7647252b370e0ff3d54ae5a07d3b
     }
 });
 exports.forgetpasswordverify = asyncHandler(async (req, res) => {
@@ -309,7 +330,7 @@ exports.forgetpasswordverify = asyncHandler(async (req, res) => {
     if (!error.isEmpty()) {
         res.status(401)
         return res.json({
-            "msg": "Token is missing",
+            message: "Token is missing",
         })
 
     }
@@ -320,13 +341,13 @@ exports.forgetpasswordverify = asyncHandler(async (req, res) => {
         if (err) {
             res.status(401)
             return res.json({
-                "msg": "Token expires or invalid",
+                message: "Token expires or invalid",
             })
 
         } else {
             const { email } = jwt.decode(token);
             return res.json({
-                "msg": "success",
+                message: "success",
 
             })
         }
@@ -339,7 +360,7 @@ exports.updatepassword = asyncHandler(async (req, res) => {
     if (!errors.isEmpty()) {
         res.status(401);
         return res.json({
-            "msg": errors.array()[0].msg,
+            message: errors.array()[0].msg,
         })
 
     }
@@ -349,7 +370,7 @@ exports.updatepassword = asyncHandler(async (req, res) => {
     if (new_password != confirm_password) {
         res.status(404);
         return res.json({
-            "msg": "Passwords do not match.",
+            message: "Passwords do not match.",
         })
 
     }
@@ -358,19 +379,12 @@ exports.updatepassword = asyncHandler(async (req, res) => {
     if (strength.length > 72) {
         res.status(401);
         return res.json({
-            "msg": "Password is too Long",
+            message: "Password is too Long",
         })
 
     }
 
-    if (strength.value != "Strong") {
-        res.status(401);
-        return res.json({
-            "msg": "Weak Password",
-        })
-
-    }
-    const email = req.session.email;
+    const email = req.session.forgetpasswordemail;
 
     Subscriber.updateOne(
         { email: email },
@@ -380,8 +394,8 @@ exports.updatepassword = asyncHandler(async (req, res) => {
                 console.log(err)
             }
             else {
-                res.json({
-                    "msg": "Password changed",
+                return res.json({
+                    message: "Password changed",
                 })
             }
         }
