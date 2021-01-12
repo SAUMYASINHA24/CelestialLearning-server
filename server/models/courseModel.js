@@ -8,10 +8,12 @@ const videoSchema = mongoose.Schema({
     videoSlug: {
         type: String
     }
+}, {
+    versionKey: false,
 });
 
-videoSchema.pre('save' | 'update', async () => {
-    this.videoSlug = this.name;
+videoSchema.pre('save', async function () {
+    this.videoSlug = slug(this.name);
 });
 
 const Video = new mongoose.model('Video', videoSchema)
@@ -25,18 +27,23 @@ const sectionSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    video: {
+    video: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Video'
-    },
+    }],
     sectionSlug: {
         type: String
     }
 
+}, {
+    versionKey: false,
 });
 
-sectionSchema.pre('save' | 'update', async () => {
+sectionSchema.pre('save', async function (next) {
     this.sectionSlug = slug(this.sectionName);
+    //const content = new Content();
+    //content.save();
+    next();
 });
 
 const Section = new mongoose.model('Section', sectionSchema)
@@ -47,12 +54,14 @@ const contentSchema = mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Section'
         }]
-    }
+    }, {
+    versionKey: false,
+}
 );
 
 const Content = new mongoose.model('Content', contentSchema);
 
-const cousrsSchema = mongoose.Schema(
+const courseSchema = mongoose.Schema(
     {
         author: {
             type: mongoose.Schema.Types.ObjectId,
@@ -62,7 +71,7 @@ const cousrsSchema = mongoose.Schema(
             type: String,
             required: true
         },
-        descriprion: {
+        description: {
             type: String,
             required: true
         },
@@ -70,7 +79,7 @@ const cousrsSchema = mongoose.Schema(
             type: Number,
             required: true
         },
-        for: [{
+        suitableFor: [{
             type: String
         }],
         platform: {
@@ -84,16 +93,19 @@ const cousrsSchema = mongoose.Schema(
         },
         content: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Content'
+            ref: 'Content',
         }
-    }
+    }, {
+    versionKey: false,
+}
 );
 
-cousrsSchema.pre('save' | 'update', async () => {
+courseSchema.pre('save', async function (next) {
     this.courseSlug = slug(this.title);
+    next();
 });
 
-const Course = new mongoose.model('Course', cousrsSchema); 
+const Course = new mongoose.model('Course', courseSchema);
 
 module.exports = {
     Course: Course,
