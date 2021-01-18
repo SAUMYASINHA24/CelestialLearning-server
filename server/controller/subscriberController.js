@@ -126,6 +126,7 @@ exports.verify = asyncHandler(async (req, res) => {
     }
 
     const token = req.headers.authorization.split(' ')[1];
+    //const {token} = req.body ;
 
     jwt.verify(token, process.env.JWT_SECRET, async (err) => {
         if (err) {
@@ -218,6 +219,7 @@ exports.login = asyncHandler(async (req, res) => {
             req.session.email = email;
             req.session.token = token;
 
+
             return res.json({
                 message: " You are logged in successfully.",
                 _id: await user.id,
@@ -225,6 +227,7 @@ exports.login = asyncHandler(async (req, res) => {
             })
         }
         else {
+            res.status(401)
             return res.json({
                 message: "Please activate your account.",
             })
@@ -232,6 +235,7 @@ exports.login = asyncHandler(async (req, res) => {
 
     }
     else {
+        res.status(401)
         return res.json({
             message: "Incorrect username or password.",
         })

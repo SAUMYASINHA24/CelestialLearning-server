@@ -103,7 +103,7 @@ router.post(
     [
         check("title", "Title is required").exists(),
         check('description', "Description is required.").exists(),
-        check('price', "Price is required.").exists(),
+        check("category" , "Category required").exists() ,
         check('suitableFor', "For is required.").exists(),
         check('platform', "Platform is required.").exists(),
         check('prerequisite', "Prerequisite is required.").exists(),
